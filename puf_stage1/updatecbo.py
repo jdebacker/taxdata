@@ -95,6 +95,7 @@ def update_econproj(url, baseline, text_args):
     # pull all of the latest CBO reports and use them for needed updates
     session = HTMLSession()
     r = session.get(url)
+    cbo_pre_url = "https://www.cbo.gov"
     divs = r.html.find("div.view.view-recurring-data")
     revprojections = divs[4]
     # both assertions are there to throw errors if the order of sections change
@@ -104,7 +105,8 @@ def update_econproj(url, baseline, text_args):
     rev_link = latest_revprojections.find("a")[0]
     _rev_report = datetime.strptime(rev_link.text, "%b %Y")
     rev_report = datetime.strftime(_rev_report, "%B %Y")
-    rev_url = rev_link.attrs["href"]
+    rev_file_url = rev_link.attrs["href"]
+    rev_url = "".join([cbo_pre_url, rev_file_url])
 
     econprojections = divs[8]
     assert "10-Year Economic Projections" in econprojections.text
@@ -112,7 +114,8 @@ def update_econproj(url, baseline, text_args):
     econ_link = latest_econprojections.find("a")[0]
     _cbo_report = datetime.strptime(econ_link.text, "%b %Y")
     cbo_report = datetime.strftime(_cbo_report, "%B %Y")
-    econ_url = econ_link.attrs["href"]
+    econ_file_url = econ_link.attrs["href"]
+    econ_url = "".join([cbo_pre_url, econ_file_url])
 
     if cbo_report == text_args["current_cbo"]:
         print("\tNo new data since last update")
@@ -189,7 +192,9 @@ def update_econproj(url, baseline, text_args):
         )
         cg_proj.index = cg_proj[cg_proj.columns[0]]
         var = "Capital Gains Realizationsa"
-        cgns = cg_proj[var]["Billions of Dollars"].loc[list(range(2017, 2032))]
+        # increase the CBO final year to (the last year + 1) for each update.
+        # e.g. when the CBO final year from CBO is 2033, make the update as range(2017,2034)
+        cgns = cg_proj[var]["Billions of Dollars"].loc[list(range(2017, 2034))]
         var_list = [cgns]
         var_names = ["CGNS"]
         df = pd.DataFrame(var_list, index=var_names).round(1)
@@ -311,7 +316,7 @@ def update_rets(url, baseline, text_args):
             spreadsheet_url = link
             break
     data = pd.read_excel(spreadsheet_url, sheet_name="1B-BOD", index_col=0, header=2)
-    projections = data.loc["Form 1040, Total*"]
+    projections = data.loc["Forms 1040, 1040-SR, and 1040-SP, Total"]
     projections /= 1_000_000  # convert units
     pct_change = projections.pct_change() + 1
     # extrapolate out to final year of other CBO projections
@@ -369,10 +374,9 @@ def update_ucomp(url, baseline, text_args):
         return baseline, text_args
     data = pd.read_excel(ucomp_url, skiprows=3, index_col=0, thousands=",")
     try:
-        benefits = data.loc["     Total Benefits"].astype(int) / 1000
+        benefits = data.loc["Budget Authority"].dropna().astype(int) / 1000
     except KeyError:
-        # the flip between capitalizing the 'B' in benefits sometimes
-        benefits = data.loc["     Total benefits"].astype(int) / 1000
+        benefits = data.loc["Budget Authority"].dropna().astype(int) / 1000
     benefits = benefits.round(1)
     df = pd.DataFrame(benefits).transpose()
     df.index = ["UCOMP"]
@@ -421,7 +425,15 @@ def fill_text_args(text):
 
 
 def update_cbo():
-    out_path = Path(CUR_PATH, "..", "doc", "CBO_Baseline_Updating_Instructions.md")
+    out_path = Path(
+        CUR_PATH,
+        "..",
+        "docs",
+        "book",
+        "content",
+        "methods",
+        "CBO_Baseline_Updating_Instructions.md",
+    )
     template_str = Path(CUR_PATH, "doc", "cbo_instructions_template.md").open().read()
     current_text = out_path.open().read()
     text_args = fill_text_args(current_text)

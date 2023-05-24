@@ -7,7 +7,14 @@ function Solve_func(year, tol)
 
 	println("\nSolving weights for $year ...\n\n")
 
-	array = npzread(string(year, "_input.npz"))
+	# we only solve the weights for years where the targets have changed. If the
+	# targets have not changed, we don't write the _input.npz file
+	if isfile(string(year, "_input.npz"))
+		array = npzread(string(year, "_input.npz"))
+	else
+		println("Skipping solver for $year \n")
+		return nothing
+	end
 
 	A1 = array["A1"]
 	A2 = array["A2"]
@@ -75,11 +82,12 @@ function Solve_func(year, tol)
 end
 
 
-year_list = [x for x in 2012:2031]
+year_list = [x for x in 2012:2033]
 tol_list = [0.40, 0.38, 0.35, 0.33, 0.30,
- 			0.45, 0.45, 0.45, 0.45, 0.45,
-			0.45, 0.45, 0.45, 0.45,	0.45,
-			0.45, 0.45, 0.45, 0.45, 0.45]
+ 	    0.45, 0.45, 0.45, 0.45, 0.45,
+	    0.45, 0.45, 0.45, 0.45, 0.45,
+	    0.45, 0.45, 0.45, 0.45, 0.45, 
+	    0.45, 0.45]
 
 # Run solver function for all years and tolerances (in order)
 for i in zip(year_list, tol_list)

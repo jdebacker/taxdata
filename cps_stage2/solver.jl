@@ -5,12 +5,15 @@ using LinearAlgebra
 
 function Solve_func(year, tol)
 
-	println("\nSolving weights for $year ...\n\n")
-
-	array = npzread(string(year, "_input.npz"))
-
-	# ddir = "/home/donboyd/Documents/python_projects/taxdata/puf_stage2/"
-	# array = npzread(string(ddir, year, "_input.npz"))
+	println("Solving weights for $year ...\n\n")
+	# we only solve the weights for years where the targets have changed. If the
+	# targets have not changed, we don't write the _input.npz file
+	if isfile(string(year, "_input.npz"))
+		array = npzread(string(year, "_input.npz"))
+	else
+		println("Skipping solver for $year \n")
+		return nothing
+	end
 
 	A1 = array["A1"]
 	A2 = array["A2"]
@@ -77,7 +80,7 @@ function Solve_func(year, tol)
 
 end
 
-year_list = [x for x in 2014:2031]
+year_list = [x for x in 2014:2033]
 tol = 0.70
 
 # Run solver function for all years and tolerances (in order)
