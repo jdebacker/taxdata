@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 def dataprep(puf, Stage_I_factors, Stage_II_targets, year):
@@ -233,6 +234,28 @@ def dataprep(puf, Stage_I_factors, Stage_II_targets, year):
     ]
     for m in temp:
         b.append(m)
+
+    tab_dict = {"AGI Category": [
+        "Wages and Salaries: Zero or Less",
+        "Wages and Salaries: $1 Less Than $10,000",
+        "Wages and Salaries: $10,000 Less Than $20,000",
+        "Wages and Salaries: $20,000 Less Than $30,000",
+        "Wages and Salaries: $30,000 Less Than $40,000",
+        "Wages and Salaries: $40,000 Less Than $50,000",
+        "Wages and Salaries: $50,000 Less Than $75,000",
+        "Wages and Salaries: $75,000 Less Than $100,000",
+        "Wages and Salaries: $100,000 Less Than $200,000",
+        "Wages and Salaries: $200,000 Less Than $500,000",
+        "Wages and Salaries: $500,000 Less Than $1 Million",
+        "Wages and Salaries: $1 Million and Over"],
+        "Wages-Post PR": [
+            wage_1.sum(), wage_2.sum(), wage_3.sum(), wage_4.sum(),
+            wage_5.sum(), wage_6.sum(), wage_7.sum(), wage_8.sum(),
+            wage_9.sum(), wage_10.sum(), wage_11.sum(), wage_12.sum()]}
+    tab_dict["Wages-Target"] = [Stage_II_targets[ystr][target_name] * APOPN / AWAGE * 1000 for target_name in tab_dict["AGI Category"]]
+    tab = pd.DataFrame(tab_dict)
+    tab.to_csv("WageBinTargets" + str(year) + ".csv", index=False)
+
 
     # export to .npz file
     np.savez(str(str(year) + "_input.npz"), A1=A1, A2=A2, b=b)
